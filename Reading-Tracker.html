@@ -1,0 +1,1773 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reading List Tracker</title>
+  <style>
+    :root{
+      --bg: #0b0f14;
+      --card: rgba(255,255,255,0.06);
+      --card2: rgba(255,255,255,0.04);
+      --stroke: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.68);
+      --muted2: rgba(255,255,255,0.50);
+      --accent: #9be15d;
+      --accent2:#00e3ff;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --good:#7CFFB2;
+      --radius: 18px;
+      --shadow: 0 18px 50px rgba(0,0,0,0.55);
+      --shadow2: 0 10px 25px rgba(0,0,0,0.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 15% -10%, rgba(0,227,255,0.18), transparent 60%),
+        radial-gradient(900px 700px at 110% 0%, rgba(155,225,93,0.16), transparent 55%),
+        radial-gradient(900px 900px at 40% 120%, rgba(255,204,102,0.10), transparent 60%),
+        var(--bg);
+      min-height:100vh;
+    }
+
+    header{
+      position:sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(11,15,20,0.88), rgba(11,15,20,0.55));
+      border-bottom: 1px solid var(--stroke);
+    }
+
+    .wrap{
+      width:min(1200px, 92vw);
+      margin:0 auto;
+      padding: 18px 0 34px;
+    }
+
+    .topbar{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      padding: 10px 0 6px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 260px;
+    }
+    .title h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing: 0.3px;
+      font-weight: 740;
+    }
+    .title .sub{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height:1.35;
+    }
+
+    .pillrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border:1px solid var(--stroke);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .pill strong{
+      color: var(--text);
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+
+    .tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 10px;
+    }
+    .tab{
+      padding: 10px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+      cursor:pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+      font-size: 13px;
+      font-weight: 700;
+      user-select:none;
+    }
+    .tab:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.085);
+      border-color: rgba(255,255,255,0.22);
+    }
+    .tab.active{
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(0,227,255,0.22), rgba(155,225,93,0.18));
+      border-color: rgba(155,225,93,0.30);
+    }
+
+    .dashboard{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 960px){
+      .dashboard{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.035));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      padding: 14px;
+    }
+
+    .panel h2{
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 650;
+      letter-spacing:0.3px;
+      text-transform: uppercase;
+    }
+
+    .metrics{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (max-width: 620px){
+      .metrics{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    .metric{
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      min-height: 76px;
+    }
+    .metric .k{
+      font-size: 11px;
+      color: var(--muted2);
+      letter-spacing:0.2px;
+      margin-bottom:6px;
+    }
+    .metric .v{
+      font-size: 22px;
+      font-weight: 780;
+      letter-spacing:0.2px;
+      margin:0;
+    }
+    .metric .hint{
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .progressBlock{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .progressRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+    }
+    .progressRow .left{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .progressRow .left .big{
+      font-size: 16px;
+      font-weight: 750;
+    }
+    .progressRow .left .small{
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .progressRow .right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .bar{
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.08);
+      overflow:hidden;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      box-shadow: 0 0 20px rgba(0,227,255,0.25);
+      transition: width 300ms ease;
+    }
+
+    .controls{
+      margin-top: 16px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .controls .left, .controls .right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    input, select, button, textarea{
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+    }
+
+    .field{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.10);
+    }
+    .field label{
+      font-size: 12px;
+      color: var(--muted2);
+      white-space:nowrap;
+    }
+    .field input, .field select, .field textarea{
+      border:none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      min-width: 130px;
+    }
+    .field textarea{
+      min-width: 280px;
+      min-height: 90px;
+      resize: vertical;
+    }
+    .field input::placeholder, .field textarea::placeholder{ color: rgba(255,255,255,0.32); }
+
+    .btn{
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      cursor:pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.085);
+      border-color: rgba(255,255,255,0.22);
+    }
+    .btn.primary{
+      background: linear-gradient(90deg, rgba(0,227,255,0.22), rgba(155,225,93,0.18));
+      border-color: rgba(155,225,93,0.30);
+    }
+    .btn.danger{
+      border-color: rgba(255,107,107,0.35);
+      background: rgba(255,107,107,0.10);
+    }
+
+    main .wrap{ padding-top: 20px; }
+
+    .sectionHead{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin: 10px 0 14px;
+    }
+    .sectionHead h3{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:0.2px;
+    }
+    .sectionHead p{
+      margin:0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* Pinterest-ish masonry using columns */
+    .masonry{
+      column-count: 3;
+      column-gap: 14px;
+    }
+    @media (max-width: 1000px){ .masonry{ column-count: 2; } }
+    @media (max-width: 640px){ .masonry{ column-count: 1; } }
+
+    .card{
+      break-inside: avoid;
+      margin: 0 0 14px;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: var(--shadow2);
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:
+        radial-gradient(480px 220px at 20% 0%, rgba(0,227,255,0.14), transparent 55%),
+        radial-gradient(380px 220px at 110% 15%, rgba(155,225,93,0.12), transparent 58%);
+      pointer-events:none;
+      opacity:0.9;
+    }
+    .card > *{ position:relative; }
+
+    .cardTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .badge{
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      white-space:nowrap;
+    }
+
+    .card h4{
+      margin: 2px 0 8px;
+      font-size: 15px;
+      font-weight: 780;
+      line-height: 1.25;
+      letter-spacing:0.2px;
+    }
+    .card h4 a{
+      color: var(--text);
+      text-decoration: none;
+    }
+    .card h4 a:hover{ text-decoration: underline; }
+
+    .url{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,0.70);
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display:block;
+      margin: 0 0 10px;
+    }
+    .url a{ color: rgba(255,255,255,0.70); text-decoration:none; }
+    .url a:hover{ text-decoration: underline; }
+
+    .meta{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 8px 0 12px;
+    }
+    .meta span{
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+    }
+
+    .cardActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .switch{
+      width: 44px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.14);
+      position:relative;
+      cursor:pointer;
+      transition: background 160ms ease, border-color 160ms ease;
+    }
+    .knob{
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.85);
+      position:absolute;
+      top:50%;
+      left: 3px;
+      transform: translateY(-50%);
+      transition: left 160ms ease, background 160ms ease;
+    }
+    .switch.on{
+      background: rgba(124,255,178,0.18);
+      border-color: rgba(124,255,178,0.30);
+    }
+    .switch.on .knob{
+      left: 21px;
+      background: rgba(124,255,178,0.95);
+    }
+
+    .minsInput{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 8px 10px;
+    }
+    .minsInput input{
+      width: 70px;
+      border:none;
+      background:transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-family: var(--mono);
+    }
+    .minsInput small{ color: var(--muted2); }
+
+    footer{
+      color: rgba(255,255,255,0.45);
+      font-size: 12px;
+      padding: 24px 0 40px;
+      text-align:center;
+    }
+
+    .divider{
+      height:1px;
+      background: rgba(255,255,255,0.10);
+      margin: 18px 0 12px;
+    }
+
+    .ghost{
+      color: rgba(255,255,255,0.55);
+      padding: 16px;
+      border: 1px dashed rgba(255,255,255,0.18);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .inboxGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 980px){ .inboxGrid{ grid-template-columns: 1fr; } }
+
+    .mini{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .preview{
+      width:100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.02);
+      overflow:hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+    }
+    .preview img{
+      width:100%;
+      display:block;
+      max-height: 380px;
+      object-fit: cover;
+    }
+
+    .statusGood{ color: rgba(124,255,178,0.95); }
+    .statusWarn{ color: rgba(255,204,102,0.95); }
+    .statusBad{ color: rgba(255,107,107,0.95); }
+
+    .smallBar{
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.08);
+      overflow:hidden;
+    }
+    .smallBar > div{
+      height:100%;
+      width:0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 150ms ease;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="title">
+          <h1>📚 What I Read — Reading Workspace</h1>
+          <p class="sub">Reading logs + <strong>Capture Inbox (OCR)</strong> · Pinterest-y cards · Local-first (localStorage)</p>
+        </div>
+
+        <div class="pillrow">
+          <div class="pill">Month: <strong id="pillMonth">March</strong></div>
+          <div class="pill">Week: <strong id="pillWeek">Week 1</strong></div>
+          <div class="pill">Saved: <strong id="pillSaved">0</strong></div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Navigation">
+        <div class="tab active" data-tab="reading">Reading Logs</div>
+        <div class="tab" data-tab="inbox">Capture Inbox (OCR)</div>
+      </div>
+
+      <div id="readingDashboard" class="dashboard">
+        <div class="panel">
+          <h2>Progress Dashboard</h2>
+          <div class="progressBlock">
+            <div class="progressRow">
+              <div class="left">
+                <div class="big"><span id="readCount">0</span>/<span id="totalCount">0</span> read</div>
+                <div class="small"><span id="pct">0</span>% completion (selected view)</div>
+              </div>
+              <div class="right">
+                <button class="btn" id="markAllReadBtn" type="button">Mark all read</button>
+                <button class="btn danger" id="resetBtn" type="button">Reset</button>
+              </div>
+            </div>
+            <div class="bar" aria-label="Reading progress">
+              <div id="barFill"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="metrics">
+              <div class="metric">
+                <div class="k">Total entries</div>
+                <p class="v" id="mTotal">0</p>
+                <div class="hint">In your tracker</div>
+              </div>
+              <div class="metric">
+                <div class="k">Read minutes</div>
+                <p class="v" id="mMinutes">0</p>
+                <div class="hint">Logged time</div>
+              </div>
+              <div class="metric">
+                <div class="k">Current streak</div>
+                <p class="v" id="mStreak">0</p>
+                <div class="hint">Days in a row</div>
+              </div>
+              <div class="metric">
+                <div class="k">This week</div>
+                <p class="v" id="mWeekReads">0</p>
+                <div class="hint">Items marked read</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Add + Filter</h2>
+
+          <div class="controls">
+            <div class="left">
+              <div class="field">
+                <label for="filterMonth">Month</label>
+                <select id="filterMonth">
+                  <option value="March" selected>March</option>
+                  <option value="April">April</option>
+                  <option value="May">May</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="filterWeek">Week</label>
+                <select id="filterWeek">
+                  <option value="Week 1" selected>Week 1</option>
+                  <option value="Week 2">Week 2</option>
+                  <option value="Week 3">Week 3</option>
+                  <option value="Week 4">Week 4</option>
+                  <option value="Week 5">Week 5</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="search">Search</label>
+                <input id="search" placeholder="title / tag / domain..." />
+              </div>
+            </div>
+
+            <div class="right">
+              <button class="btn primary" id="openAdd" type="button">+ Add entry</button>
+            </div>
+          </div>
+
+          <div id="addForm" class="ghost" style="margin-top:12px; display:none;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+              <div class="field" style="flex: 1 1 220px;">
+                <label for="newTitle">Title</label>
+                <input id="newTitle" placeholder="e.g., The Consequences of Abundant Intelligence" />
+              </div>
+              <div class="field" style="flex: 1 1 220px;">
+                <label for="newUrl">URL</label>
+                <input id="newUrl" placeholder="https://..." />
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <div class="field">
+                <label for="newMonth">Month</label>
+                <select id="newMonth">
+                  <option>March</option><option>April</option><option>May</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="newWeek">Week</label>
+                <select id="newWeek">
+                  <option>Week 1</option><option>Week 2</option><option>Week 3</option><option>Week 4</option><option>Week 5</option>
+                </select>
+              </div>
+              <div class="field" style="flex:1 1 240px;">
+                <label for="newTags">Tags</label>
+                <input id="newTags" placeholder="comma-separated (e.g., AI, economics)" />
+              </div>
+
+              <button class="btn primary" id="addBtn" type="button">Save</button>
+              <button class="btn" id="closeAdd" type="button">Close</button>
+            </div>
+
+            <div style="margin-top:10px; color:rgba(255,255,255,0.58); font-size:12px;">
+              Tip: Mark items read and log minutes on each card; metrics update instantly and persist in your browser.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+
+      <!-- Inbox dashboard moved here to avoid sticky-header overlap -->
+      <div id="inboxDashboard" class="dashboard" style="display:none;">
+        <div class="panel">
+          <h2>Capture Inbox — Upload screenshot(s) or paste link(s)</h2>
+
+          <div class="controls">
+            <div class="left">
+              <div class="field">
+                <label for="inboxFiles">Screenshots</label>
+                <input id="inboxFiles" type="file" accept="image/*" multiple />
+              </div>
+
+              <div class="field" style="flex: 1 1 360px;">
+                <label for="pasteLinks">Paste links</label>
+                <textarea id="pasteLinks" placeholder="Paste one or more URLs (each on a new line) ..."></textarea>
+              </div>
+            </div>
+
+            <div class="right">
+              <button class="btn" id="inboxExtractBtn" type="button">Extract (OCR)</button>
+              <button class="btn primary" id="inboxAddAllBtn" type="button">Add all to Reading Logs</button>
+              <button class="btn danger" id="inboxClearBtn" type="button">Clear inbox</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="mini">
+            Bucket assignment defaults to the currently selected Month + Week in your Reading Logs (so uploads land in the view you’re tracking).
+            Tip: change the Month/Week in the Reading Logs tab before uploading to route items to a different bucket.
+            <br/>
+            OCR runs fully in your browser using <strong>Tesseract.js</strong>. The first run may be slower while language data is cached.
+          </div>
+
+          <div style="margin-top:12px;">
+            <div class="mini"><strong>OCR progress</strong>: <span id="ocrStatus">Idle</span></div>
+            <div class="smallBar" style="margin-top:8px;"><div id="ocrBar"></div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Inbox Summary</h2>
+          <div class="metrics">
+            <div class="metric">
+              <div class="k">Inbox items</div>
+              <p class="v" id="inboxCount">0</p>
+              <div class="hint">Screenshots + pasted links</div>
+            </div>
+            <div class="metric">
+              <div class="k">Ready to add</div>
+              <p class="v" id="inboxReady">0</p>
+              <div class="hint">Valid URL found</div>
+            </div>
+            <div class="metric">
+              <div class="k">Duplicates</div>
+              <p class="v" id="inboxDup">0</p>
+              <div class="hint">Already in list</div>
+            </div>
+            <div class="metric">
+              <div class="k">Needs review</div>
+              <p class="v" id="inboxReview">0</p>
+              <div class="hint">No URL / low confidence</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Reading logs view -->
+      <section id="viewReading">
+        <div class="sectionHead">
+          <div>
+            <h3 id="sectionTitle">March · Week 1</h3>
+            <p id="sectionSub">Your reading links (heading + clickable URL) in a Pinterest-y list.</p>
+          </div>
+        </div>
+
+        <div id="grid" class="masonry"></div>
+
+        <footer>
+          Built as a local-first tracker (uses <span style="font-family:var(--mono);">localStorage</span>). OCR runs in-browser.
+        </footer>
+      </section>
+
+      <!-- Inbox view -->
+      <section id="viewInbox" style="display:none;">
+        <div class="sectionHead">
+          <div>
+            <h3>Capture Inbox</h3>
+            <p>Upload LinkedIn / web article screenshots, or paste URLs. Extracted links can be added to your reading logs in one click.</p>
+          </div>
+        </div>
+
+        <div id="inboxList" class="inboxGrid"></div>
+
+        <footer>
+          Tip: for best results, include the browser address bar or the share sheet in screenshots.
+        </footer>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Tesseract.js for in-browser OCR -->
+  <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+
+  <script>
+    // =============================
+    // Seed data (kept from your file)
+    // =============================
+    const SEED = [
+      {
+        id: crypto.randomUUID(),
+        month: "March",
+        week: "Week 1",
+        title: "The Consequences of Abundant Intelligence",
+        url: "https://www.citriniresearch.com/p/2028gic",
+        tags: ["AI", "strategy", "productivity"],
+        read: false,
+        minutes: 0,
+        addedAt: Date.now(),
+        readAt: null
+      },
+      {
+        id: crypto.randomUUID(),
+        month: "March",
+        week: "Week 1",
+        title: "Anthropic Economic Index",
+        url: "https://www.anthropic.com/economic-index",
+        tags: ["economics", "AI", "labor"],
+        read: false,
+        minutes: 0,
+        addedAt: Date.now(),
+        readAt: null
+      },
+      {
+        id: crypto.randomUUID(),
+        month: "March",
+        week: "Week 1",
+        title: "Add your 3rd reading here (replace me)",
+        url: "https://example.com",
+        tags: ["placeholder"],
+        read: false,
+        minutes: 0,
+        addedAt: Date.now(),
+        readAt: null
+      }
+    ];
+
+    // Storage keys
+    const KEY = "reading_tracker_v1";
+    const HABIT_KEY = "reading_habits_v1";
+    const INBOX_KEY = "reading_inbox_v1";
+
+    // =============================
+    // Storage helpers
+    // =============================
+    function loadState(){
+      const raw = localStorage.getItem(KEY);
+      if(!raw){
+        localStorage.setItem(KEY, JSON.stringify(SEED));
+        return structuredClone(SEED);
+      }
+      try { return JSON.parse(raw); } catch(e){
+        localStorage.setItem(KEY, JSON.stringify(SEED));
+        return structuredClone(SEED);
+      }
+    }
+    function saveState(items){
+      localStorage.setItem(KEY, JSON.stringify(items));
+      document.getElementById("pillSaved").textContent = String(items.length);
+    }
+
+    function loadHabits(){
+      const raw = localStorage.getItem(HABIT_KEY);
+      if(!raw){
+        const init = { readDays: {} };
+        localStorage.setItem(HABIT_KEY, JSON.stringify(init));
+        return init;
+      }
+      try { return JSON.parse(raw); } catch(e){
+        const init = { readDays: {} };
+        localStorage.setItem(HABIT_KEY, JSON.stringify(init));
+        return init;
+      }
+    }
+    function saveHabits(h){ localStorage.setItem(HABIT_KEY, JSON.stringify(h)); }
+
+    function loadInbox(){
+      const raw = localStorage.getItem(INBOX_KEY);
+      if(!raw){
+        const init = [];
+        localStorage.setItem(INBOX_KEY, JSON.stringify(init));
+        return init;
+      }
+      try { return JSON.parse(raw); } catch(e){
+        const init = [];
+        localStorage.setItem(INBOX_KEY, JSON.stringify(init));
+        return init;
+      }
+    }
+    function saveInbox(inbox){
+      localStorage.setItem(INBOX_KEY, JSON.stringify(inbox));
+      updateInboxSummary(inbox);
+    }
+
+    // =============================
+    // UI state
+    // =============================
+    let items = loadState();
+    let habits = loadHabits();
+    let inbox = loadInbox();
+
+    const filterMonth = document.getElementById("filterMonth");
+    const filterWeek  = document.getElementById("filterWeek");
+    const searchInput = document.getElementById("search");
+
+    // Initialize pills from filters
+    document.getElementById("pillMonth").textContent = filterMonth.value;
+    document.getElementById("pillWeek").textContent = filterWeek.value;
+    document.getElementById("pillSaved").textContent = String(items.length);
+
+    // =============================
+    // Date bucket logic (Month + Week-of-month)
+    // =============================
+    const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+    function bucketFromDate(ms){
+      const d = new Date(ms);
+      const month = MONTHS[d.getMonth()];
+      const day = d.getDate(); // 1..31
+      const weekIndex = Math.floor((day - 1) / 7) + 1; // 1..5
+      const week = `Week ${Math.min(weekIndex, 5)}`;
+      return { month, week }
+
+    // Default bucket: use current filter selection (so 'today' aligns with your tracker view)
+    function defaultBucket(){
+      return { month: filterMonth.value, week: filterWeek.value };
+    }
+;
+    }
+
+    // =============================
+    // Utilities
+    // =============================
+    function todayISO(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function isoToDate(iso){
+      const [y,m,d] = iso.split("-").map(Number);
+      return new Date(y, m-1, d);
+    }
+
+    function computeStreak(readDaysMap){
+      let streak = 0;
+      let cursor = isoToDate(todayISO());
+      while(true){
+        const iso = cursor.toISOString().slice(0,10);
+        if(readDaysMap[iso]){
+          streak++;
+          cursor.setDate(cursor.getDate()-1);
+        } else {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function domainFromUrl(u){
+      try{
+        const { hostname } = new URL(u);
+        return hostname.replace(/^www\./,"");
+      } catch(e){
+        return "";
+      }
+    }
+
+    function normalize(s){ return (s||"").toLowerCase().trim(); }
+
+    function canonicalUrl(u){
+      try{
+        const url = new URL(u);
+        // drop common tracking params
+        const drop = ["utm_source","utm_medium","utm_campaign","utm_term","utm_content","trk","trackingId","originalSubdomain"];
+        drop.forEach(p => url.searchParams.delete(p));
+        // normalize
+        url.hash = "";
+        // remove trailing slash (except root)
+        if(url.pathname.length > 1 && url.pathname.endsWith("/")) url.pathname = url.pathname.slice(0,-1);
+        return url.toString();
+      } catch(e){
+        return (u||"").trim();
+      }
+    }
+
+    function matchesSearch(item, q){
+      if(!q) return true;
+      const hay = [
+        item.title,
+        item.url,
+        domainFromUrl(item.url),
+        (item.tags||[]).join(" ")
+      ].join(" ");
+      return normalize(hay).includes(normalize(q));
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function escapeAttr(str){ return escapeHtml(str); }
+
+    function clampInt(v, min, max){
+      const n = parseInt(String(v).replace(/[^\d]/g,""), 10);
+      if(Number.isNaN(n)) return min;
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function debounce(fn, ms){
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), ms);
+      };
+    }
+
+    // URL extraction from OCR text
+    function extractUrls(text){
+      const urls = new Set();
+
+      // 1) http(s) URLs
+      const httpMatches = text.match(/https?:\/\/[^\s\]\)\}<>"']+/gi) || [];
+      httpMatches.forEach(u => urls.add(cleanUrl(u)));
+
+      // 2) www. URLs
+      const wwwMatches = text.match(/\bwww\.[^\s\]\)\}<>"']+/gi) || [];
+      wwwMatches.forEach(u => urls.add(cleanUrl("https://" + u)));
+
+      return Array.from(urls).filter(Boolean);
+    }
+
+    function cleanUrl(u){
+      if(!u) return "";
+      let s = String(u).trim();
+      // strip trailing punctuation
+      s = s.replace(/[\.,;:\]\)\}]+$/g, "");
+      // common OCR: space in url
+      s = s.replace(/\s+/g, "");
+      // fix 'https//'
+      s = s.replace(/^https\/?\/?/i, "https://");
+      s = s.replace(/^http\/?\/?/i, "http://");
+      try{
+        // validate
+        new URL(s);
+        return canonicalUrl(s);
+      }catch(e){
+        return "";
+      }
+    }
+
+    function suggestTitleFromText(text, url){
+      const lines = String(text || "")
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+      // pick first line that doesn't look like a URL and is reasonably long
+      for(const l of lines){
+        const looksUrl = /https?:\/\//i.test(l) || /^www\./i.test(l);
+        const tooShort = l.length < 18;
+        const tooNoisy = /^(like|comment|share|follow|sponsored|linkedin|http)/i.test(l);
+        if(!looksUrl && !tooShort && !tooNoisy){
+          // soften ALL CAPS
+          const cleaned = l.replace(/\s{2,}/g, " ").slice(0, 110);
+          return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+        }
+      }
+
+      const dom = domainFromUrl(url);
+      return dom ? `Reading from ${dom}` : "Untitled reading";
+    }
+
+    function isDuplicateUrl(url){
+      const cu = canonicalUrl(url);
+      return items.some(it => canonicalUrl(it.url) === cu);
+    }
+
+    // =============================
+    // Reading rendering
+    // =============================
+    function getFiltered(){
+      const m = filterMonth.value;
+      const w = filterWeek.value;
+      const q = searchInput.value;
+      return items
+        .filter(it => it.month === m && it.week === w)
+        .filter(it => matchesSearch(it, q))
+        .sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+    }
+
+    function render(){
+      const m = filterMonth.value;
+      const w = filterWeek.value;
+
+      document.getElementById("pillMonth").textContent = m;
+      document.getElementById("pillWeek").textContent = w;
+      document.getElementById("sectionTitle").textContent = `${m} · ${w}`;
+
+      const filtered = getFiltered();
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+
+      if(filtered.length === 0){
+        const empty = document.createElement("div");
+        empty.className = "ghost";
+        empty.textContent = "No entries in this view. Add one using “+ Add entry”.";
+        grid.appendChild(empty);
+      } else {
+        for(const item of filtered){
+          grid.appendChild(cardEl(item));
+        }
+      }
+
+      updateMetrics(filtered);
+    }
+
+    function cardEl(item){
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const domain = domainFromUrl(item.url);
+      const tagText = (item.tags||[]).slice(0,3).join(" · ");
+      const readLabel = item.read ? "Read" : "Unread";
+
+      card.innerHTML = `
+        <div class="cardTop">
+          <div class="badge">${escapeHtml(item.month)} · ${escapeHtml(item.week)}</div>
+          <div class="badge" style="${item.read ? 'color: rgba(124,255,178,0.95); border-color: rgba(124,255,178,0.28); background: rgba(124,255,178,0.10);' : ''}">
+            ${readLabel}
+          </div>
+        </div>
+
+        <h4><a href="${escapeAttr(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a></h4>
+
+        <span class="url">
+          <a href="${escapeAttr(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.url)}</a>
+        </span>
+
+        <div class="meta">
+          <span>${escapeHtml(domain || "link")}</span>
+          <span>${escapeHtml(tagText || "no tags")}</span>
+        </div>
+
+        <div class="cardActions">
+          <div class="toggle">
+            <div class="switch ${item.read ? "on" : ""}" data-action="toggle" aria-label="Toggle read">
+              <div class="knob"></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <div style="font-size:12px; font-weight:650;">Mark read</div>
+              <div style="font-size:11px; color: rgba(255,255,255,0.58);">Updates streak + completion</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center;">
+            <div class="minsInput" title="Log minutes spent reading this">
+              <small>min</small>
+              <input inputmode="numeric" pattern="[0-9]*" value="${Number(item.minutes||0)}" data-action="minutes" />
+            </div>
+            <button class="btn danger" data-action="delete">Delete</button>
+          </div>
+        </div>
+      `;
+
+      // Wire actions
+      card.querySelector('[data-action="toggle"]').addEventListener("click", () => toggleRead(item.id));
+      card.querySelector('[data-action="delete"]').addEventListener("click", () => deleteItem(item.id));
+      card.querySelector('[data-action="minutes"]').addEventListener("change", (e) => {
+        const v = clampInt(e.target.value, 0, 10000);
+        setMinutes(item.id, v);
+      });
+
+      return card;
+    }
+
+    function updateMetrics(filteredView){
+      const totalView = filteredView.length;
+      const readView  = filteredView.filter(x => x.read).length;
+
+      document.getElementById("totalCount").textContent = String(totalView);
+      document.getElementById("readCount").textContent  = String(readView);
+
+      const pct = totalView === 0 ? 0 : Math.round((readView / totalView) * 100);
+      document.getElementById("pct").textContent = String(pct);
+      document.getElementById("barFill").style.width = `${pct}%`;
+
+      // Global totals
+      const totalAll = items.length;
+      const minutesAll = items.reduce((s,x)=> s + Number(x.minutes||0), 0);
+      document.getElementById("mTotal").textContent = String(totalAll);
+      document.getElementById("mMinutes").textContent = String(minutesAll);
+
+      const streak = computeStreak(habits.readDays || {});
+      document.getElementById("mStreak").textContent = String(streak);
+
+      document.getElementById("mWeekReads").textContent = String(readView);
+
+      document.getElementById("pillSaved").textContent = String(items.length);
+    }
+
+    // Reading mutations
+    function toggleRead(id){
+      const idx = items.findIndex(x => x.id === id);
+      if(idx < 0) return;
+
+      const now = Date.now();
+      items[idx].read = !items[idx].read;
+      items[idx].readAt = items[idx].read ? now : null;
+
+      if(items[idx].read){
+        const iso = todayISO();
+        habits.readDays = habits.readDays || {};
+        habits.readDays[iso] = true;
+        saveHabits(habits);
+      }
+
+      saveState(items);
+      render();
+      // re-check duplicates in inbox
+      renderInbox();
+    }
+
+    function setMinutes(id, minutes){
+      const idx = items.findIndex(x => x.id === id);
+      if(idx < 0) return;
+      items[idx].minutes = minutes;
+      saveState(items);
+      render();
+    }
+
+    function deleteItem(id){
+      items = items.filter(x => x.id !== id);
+      saveState(items);
+      render();
+      renderInbox();
+    }
+
+    // Controls
+    filterMonth.addEventListener("change", render);
+    filterWeek.addEventListener("change", render);
+    searchInput.addEventListener("input", debounce(render, 80));
+
+    document.getElementById("markAllReadBtn").addEventListener("click", () => {
+      const m = filterMonth.value;
+      const w = filterWeek.value;
+      let changed = false;
+      for(const it of items){
+        if(it.month === m && it.week === w && !it.read){
+          it.read = true;
+          it.readAt = Date.now();
+          changed = true;
+        }
+      }
+      if(changed){
+        const iso = todayISO();
+        habits.readDays = habits.readDays || {};
+        habits.readDays[iso] = true;
+        saveHabits(habits);
+      }
+      saveState(items);
+      render();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      items = structuredClone(SEED);
+      habits = { readDays: {} };
+      inbox = [];
+      saveState(items);
+      saveHabits(habits);
+      saveInbox(inbox);
+      render();
+      renderInbox();
+    });
+
+    const addForm = document.getElementById("addForm");
+    document.getElementById("openAdd").addEventListener("click", () => addForm.style.display = "block");
+    document.getElementById("closeAdd").addEventListener("click", () => addForm.style.display = "none");
+
+    document.getElementById("addBtn").addEventListener("click", () => {
+      const title = document.getElementById("newTitle").value.trim();
+      const url   = document.getElementById("newUrl").value.trim();
+      const month = document.getElementById("newMonth").value;
+      const week  = document.getElementById("newWeek").value;
+      const tags  = document.getElementById("newTags").value
+                      .split(",")
+                      .map(t => t.trim())
+                      .filter(Boolean);
+
+      if(!title || !url){
+        alert("Please add both Title and URL.");
+        return;
+      }
+      if(!/^https?:\/\//i.test(url)){
+        alert("URL should start with http:// or https://");
+        return;
+      }
+
+      const c = canonicalUrl(url);
+      if(items.some(it => canonicalUrl(it.url) === c)){
+        alert("This URL already exists in your reading list (duplicate).");
+        return;
+      }
+
+      items.push({
+        id: crypto.randomUUID(),
+        month, week, title, url: c,
+        tags,
+        read:false,
+        minutes:0,
+        addedAt: Date.now(),
+        readAt: null
+      });
+
+      saveState(items);
+
+      filterMonth.value = month;
+      filterWeek.value  = week;
+
+      document.getElementById("newTitle").value = "";
+      document.getElementById("newUrl").value = "";
+      document.getElementById("newTags").value = "";
+
+      addForm.style.display = "none";
+      render();
+      renderInbox();
+    });
+
+    // =============================
+    // Tab navigation (Reading vs Inbox)
+    // =============================
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+    const viewReading = document.getElementById("viewReading");
+    const viewInbox = document.getElementById("viewInbox");
+    const readingDash = document.getElementById("readingDashboard");
+    const inboxDash = document.getElementById("inboxDashboard");
+
+    function showTab(name){
+      tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+      const isInbox = name === "inbox";
+      viewInbox.style.display = isInbox ? "" : "none";
+      inboxDash.style.display = isInbox ? "" : "none";
+      viewReading.style.display = isInbox ? "none" : "";
+      readingDash.style.display = isInbox ? "none" : "";
+      if(isInbox) renderInbox();
+      else render();
+    }
+    tabs.forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+    // =============================
+    // Inbox (OCR + Paste links)
+    // =============================
+    const inboxFiles = document.getElementById("inboxFiles");
+    const pasteLinks = document.getElementById("pasteLinks");
+    const inboxList = document.getElementById("inboxList");
+
+    const ocrStatus = document.getElementById("ocrStatus");
+    const ocrBar = document.getElementById("ocrBar");
+
+    function updateOcrProgress(label, pct){
+      ocrStatus.textContent = label;
+      ocrBar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    }
+
+    function updateInboxSummary(list){
+      const count = list.length;
+      const ready = list.filter(x => x.bestUrl && !x.duplicate).length;
+      const dup = list.filter(x => x.duplicate).length;
+      const review = count - ready - dup;
+
+      document.getElementById("inboxCount").textContent = String(count);
+      document.getElementById("inboxReady").textContent = String(ready);
+      document.getElementById("inboxDup").textContent = String(dup);
+      document.getElementById("inboxReview").textContent = String(review);
+    }
+
+    function refreshInboxDuplicates(){
+      for(const it of inbox){
+        it.duplicate = it.bestUrl ? isDuplicateUrl(it.bestUrl) : false;
+      }
+      saveInbox(inbox);
+    }
+
+    inboxFiles.addEventListener("change", async () => {
+      const files = Array.from(inboxFiles.files || []);
+      if(files.length === 0) return;
+
+      // add to inbox with previews
+      for(const f of files){
+        const id = crypto.randomUUID();
+        const uploadedAt = Date.now();
+
+        const dataUrl = await readFileAsDataUrl(f);
+
+        inbox.push({
+          id,
+          kind: "image",
+          fileName: f.name,
+          uploadedAt,
+          previewDataUrl: dataUrl,
+          ocrText: "",
+          urls: [],
+          bestUrl: "",
+          suggestedTitle: "",
+          month: defaultBucket().month,
+          week: defaultBucket().week,
+          duplicate: false,
+          status: "new",
+          lastError: ""
+        });
+      }
+
+      saveInbox(inbox);
+      renderInbox();
+      inboxFiles.value = "";
+    });
+
+    document.getElementById("inboxExtractBtn").addEventListener("click", async () => {
+      // 1) ingest pasted links as inbox items (if any)
+      const pasted = parsePastedLinks(pasteLinks.value);
+      if(pasted.length > 0){
+        const now = Date.now();
+        for(const u of pasted){
+          const c = canonicalUrl(u);
+          const { month, week } = defaultBucket();
+          inbox.push({
+            id: crypto.randomUUID(),
+            kind: "link",
+            fileName: "",
+            uploadedAt: now,
+            previewDataUrl: "",
+            ocrText: "",
+            urls: [c],
+            bestUrl: c,
+            suggestedTitle: `Reading from ${domainFromUrl(c) || "link"}`,
+            month,
+            week,
+            duplicate: isDuplicateUrl(c),
+            status: "ready",
+            lastError: ""
+          });
+        }
+        saveInbox(inbox);
+        pasteLinks.value = "";
+      }
+
+      // 2) OCR any images that are new / not processed
+      const toProcess = inbox.filter(x => x.kind === "image" && (x.status === "new" || x.status === "error"));
+      if(toProcess.length === 0){
+        refreshInboxDuplicates();
+        renderInbox();
+        updateOcrProgress("No new screenshots to process.", 100);
+        setTimeout(()=>updateOcrProgress("Idle", 0), 1200);
+        return;
+      }
+
+      updateOcrProgress(`Starting OCR for ${toProcess.length} screenshot(s)...`, 0);
+
+      for(let i=0; i<toProcess.length; i++){
+        const entry = toProcess[i];
+        try{
+          updateOcrProgress(`OCR ${i+1}/${toProcess.length}: ${entry.fileName || "screenshot"}`, Math.round((i/toProcess.length)*100));
+
+          const result = await Tesseract.recognize(entry.previewDataUrl, "eng", {
+            logger: m => {
+              if(m && m.status === "recognizing text" && typeof m.progress === "number"){
+                const base = (i / toProcess.length) * 100;
+                const span = (1 / toProcess.length) * 100;
+                const pct = Math.round(base + m.progress * span);
+                updateOcrProgress(`OCR ${i+1}/${toProcess.length}: recognizing text...`, pct);
+              }
+            }
+          });
+
+          const text = (result && result.data && result.data.text) ? result.data.text : "";
+          entry.ocrText = text;
+
+          const urls = extractUrls(text);
+          entry.urls = urls;
+
+          if(urls.length > 0){
+            // choose best URL: prefer non-linkedin tracking params trimmed, otherwise first
+            entry.bestUrl = urls[0];
+            entry.suggestedTitle = suggestTitleFromText(text, entry.bestUrl);
+            entry.status = "ready";
+            entry.lastError = "";
+          } else {
+            entry.bestUrl = "";
+            entry.suggestedTitle = "";
+            entry.status = "needs_review";
+            entry.lastError = "No URL found in OCR text.";
+          }
+
+          entry.duplicate = entry.bestUrl ? isDuplicateUrl(entry.bestUrl) : false;
+
+          saveInbox(inbox);
+          renderInbox();
+
+        } catch(e){
+          entry.status = "error";
+          entry.lastError = String(e && e.message ? e.message : e);
+          saveInbox(inbox);
+          renderInbox();
+        }
+      }
+
+      updateOcrProgress("OCR complete.", 100);
+      setTimeout(()=>updateOcrProgress("Idle", 0), 1200);
+    });
+
+    document.getElementById("inboxAddAllBtn").addEventListener("click", () => {
+      const addable = inbox.filter(x => x.bestUrl && !x.duplicate);
+      if(addable.length === 0){
+        alert("No inbox items are ready to add (either missing URL or duplicate).");
+        return;
+      }
+      let added = 0;
+      for(const x of addable){
+        if(addInboxItemToReading(x)) added++;
+      }
+      saveState(items);
+      saveInbox(inbox);
+      render();
+      renderInbox();
+      alert(`Added ${added} item(s) to Reading Logs.`);
+    });
+
+    document.getElementById("inboxClearBtn").addEventListener("click", () => {
+      if(!confirm("Clear inbox items? (This won't delete your Reading Logs.)")) return;
+      inbox = [];
+      saveInbox(inbox);
+      renderInbox();
+    });
+
+    function parsePastedLinks(text){
+      const lines = String(text || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const out = [];
+      for(const l of lines){
+        // allow multiple urls in one line
+        const urls = extractUrls(l);
+        if(urls.length > 0) out.push(...urls);
+        else if(/^https?:\/\//i.test(l)){
+          out.push(cleanUrl(l));
+        } else if(/^www\./i.test(l)){
+          out.push(cleanUrl("https://" + l));
+        }
+      }
+      return out.filter(Boolean);
+    }
+
+    async function readFileAsDataUrl(file){
+      return await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+    }
+
+    function addInboxItemToReading(x){
+      if(!x.bestUrl) return false;
+      const c = canonicalUrl(x.bestUrl);
+      if(items.some(it => canonicalUrl(it.url) === c)){
+        x.duplicate = true;
+        x.status = "duplicate";
+        return false;
+      }
+
+      items.push({
+        id: crypto.randomUUID(),
+        month: x.month || filterMonth.value,
+        week: x.week || filterWeek.value,
+        title: (x.suggestedTitle && x.suggestedTitle.trim()) ? x.suggestedTitle.trim() : `Reading from ${domainFromUrl(c) || "link"}`,
+        url: c,
+        tags: [],
+        read: false,
+        minutes: 0,
+        addedAt: x.uploadedAt || Date.now(),
+        readAt: null
+      });
+
+      x.duplicate = true;
+      x.status = "added";
+      return true;
+    }
+
+    function renderInbox(){
+      refreshInboxDuplicates();
+
+      inboxList.innerHTML = "";
+      if(inbox.length === 0){
+        const empty = document.createElement("div");
+        empty.className = "ghost";
+        empty.textContent = "Inbox is empty. Upload screenshots or paste links above, then click “Extract (OCR)”.";
+        inboxList.appendChild(empty);
+        return;
+      }
+
+      // newest first
+      const sorted = [...inbox].sort((a,b) => (b.uploadedAt||0) - (a.uploadedAt||0));
+
+      for(const x of sorted){
+        const card = document.createElement("div");
+        card.className = "panel";
+
+        const when = new Date(x.uploadedAt || Date.now()).toLocaleString();
+        const statusText = x.duplicate ? "Duplicate" :
+          (x.status === "added" ? "Added" :
+          (x.status === "ready" ? "Ready" :
+          (x.status === "needs_review" ? "Needs review" :
+          (x.status === "error" ? "Error" : "New"))));
+
+        const statusClass = x.duplicate ? "statusWarn" :
+          (x.status === "added" ? "statusGood" :
+          (x.status === "ready" ? "statusGood" :
+          (x.status === "needs_review" ? "statusWarn" :
+          (x.status === "error" ? "statusBad" : ""))));
+
+        const urlList = (x.urls || []).slice(0,4);
+
+        card.innerHTML = `
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div>
+              <div class="badge">${escapeHtml(x.month)} · ${escapeHtml(x.week)}</div>
+              <div style="margin-top:8px; font-size:12px; color: rgba(255,255,255,0.60);">Uploaded: ${escapeHtml(when)}</div>
+            </div>
+            <div class="badge ${statusClass}">${escapeHtml(statusText)}</div>
+          </div>
+
+          ${x.kind === "image" && x.previewDataUrl ? `
+            <div class="preview" style="margin-top:12px;"><img alt="screenshot preview" src="${escapeAttr(x.previewDataUrl)}" /></div>
+          ` : ""}
+
+          <div style="margin-top:12px;">
+            <div class="field" style="margin-bottom:10px;">
+              <label>Title</label>
+              <input data-title value="${escapeAttr(x.suggestedTitle || "")}" placeholder="(optional) edit title before adding..." style="flex:1; min-width:220px;" />
+            </div>
+
+            <div class="field" style="margin-bottom:10px;">
+              <label>Best URL</label>
+              <input data-besturl value="${escapeAttr(x.bestUrl || "")}" placeholder="Paste / correct URL here..." style="flex:1; min-width:220px; font-family: var(--mono);" />
+            </div>
+
+            <div class="mini">
+              Found URLs: ${urlList.length ? urlList.map(u => `<span class="badge" style="margin-right:6px; font-family: var(--mono);">${escapeHtml(u)}</span>`).join("") : "<em>none</em>"}
+            </div>
+
+            ${x.lastError ? `<div class="mini statusWarn" style="margin-top:8px;">${escapeHtml(x.lastError)}</div>` : ""}
+          </div>
+
+          <div class="controls" style="margin-top:12px;">
+            <div class="left">
+              <button class="btn" data-action="copy">Copy URL</button>
+              <button class="btn danger" data-action="remove">Remove</button>
+            </div>
+            <div class="right">
+              <button class="btn primary" data-action="add" ${(!x.bestUrl || x.duplicate) ? "disabled" : ""}>Add to Reading Logs</button>
+            </div>
+          </div>
+        `;
+
+        // wire handlers
+        const titleInput = card.querySelector('[data-title]');
+        const urlInput = card.querySelector('[data-besturl]');
+
+        titleInput.addEventListener("change", () => {
+          const idx = inbox.findIndex(z => z.id === x.id);
+          if(idx < 0) return;
+          inbox[idx].suggestedTitle = titleInput.value.trim();
+          saveInbox(inbox);
+        });
+
+        urlInput.addEventListener("change", () => {
+          const idx = inbox.findIndex(z => z.id === x.id);
+          if(idx < 0) return;
+          const cleaned = cleanUrl(urlInput.value);
+          inbox[idx].bestUrl = cleaned;
+          inbox[idx].duplicate = cleaned ? isDuplicateUrl(cleaned) : false;
+          inbox[idx].status = cleaned ? "ready" : "needs_review";
+          saveInbox(inbox);
+          renderInbox();
+        });
+
+        card.querySelector('[data-action="copy"]').addEventListener("click", async () => {
+          const u = (x.bestUrl || "").trim();
+          if(!u) return alert("No URL to copy.");
+          try{
+            await navigator.clipboard.writeText(u);
+            alert("Copied.");
+          }catch(e){
+            alert("Copy failed (browser permissions).");
+          }
+        });
+
+        card.querySelector('[data-action="remove"]').addEventListener("click", () => {
+          inbox = inbox.filter(z => z.id !== x.id);
+          saveInbox(inbox);
+          renderInbox();
+        });
+
+        card.querySelector('[data-action="add"]').addEventListener("click", () => {
+          const idx = inbox.findIndex(z => z.id === x.id);
+          if(idx < 0) return;
+          // ensure latest edits applied
+          inbox[idx].suggestedTitle = titleInput.value.trim();
+          inbox[idx].bestUrl = cleanUrl(urlInput.value);
+          inbox[idx].duplicate = inbox[idx].bestUrl ? isDuplicateUrl(inbox[idx].bestUrl) : false;
+
+          if(!inbox[idx].bestUrl){
+            alert("Please paste/correct the URL first.");
+            return;
+          }
+          if(inbox[idx].duplicate){
+            alert("This URL already exists in your reading list.");
+            return;
+          }
+
+          addInboxItemToReading(inbox[idx]);
+          saveState(items);
+          saveInbox(inbox);
+          render();
+          renderInbox();
+        });
+
+        inboxList.appendChild(card);
+      }
+
+      updateInboxSummary(inbox);
+    }
+
+    // First paint
+    render();
+    renderInbox();
+  </script>
+</body>
+</html>
